@@ -175,7 +175,16 @@
             padding: 15px;
         }
         
-        .upgrade-item, .mission-item, .achievement-item {
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .upgrade-item, .mission-item, .achievement-item, .powerup-item, .theme-item {
             background: linear-gradient(135deg, #1a2538 0%, #0d1117 100%);
             border: 1px solid #2a3a50;
             border-radius: 8px;
@@ -385,6 +394,10 @@
                 <button class="tab active" data-tab="upgrades">MEJORAS</button>
                 <button class="tab" data-tab="missions">MISIONES</button>
                 <button class="tab" data-tab="achievements">LOGROS</button>
+                <button class="tab" data-tab="powerups">POWER-UPS</button>
+                <button class="tab" data-tab="challenges">DESAFÍOS</button>
+                <button class="tab" data-tab="stats">STATS</button>
+                <button class="tab" data-tab="themes">TEMAS</button>
             </div>
             
             <div id="tab-content"></div>
@@ -456,6 +469,48 @@
             { name: "Premio", desc: "Primer Prestigio", unlocked: false }
         ];
         
+        const ranks = [
+            { name: "Hierro", color: "#8b8b8b", minScore: 0, bonus: 1.0 },
+            { name: "Bronce", color: "#cd7f32", minScore: 1000, bonus: 1.1 },
+            { name: "Plata", color: "#c0c0c0", minScore: 10000, bonus: 1.2 },
+            { name: "Oro", color: "#ffd700", minScore: 100000, bonus: 1.3 },
+            { name: "Platino", color: "#00d4ff", minScore: 1000000, bonus: 1.5 },
+            { name: "Diamante", color: "#b9f2ff", minScore: 10000000, bonus: 2.0 }
+        ];
+        
+        const powerups = [
+            { name: "Doble Click", cost: 500, duration: 60, mult: 2, active: false, timer: 0 },
+            { name: "Energía Extra", cost: 300, duration: 0, energyBonus: 500, active: false, timer: 0 },
+            { name: "Combo Turbo", cost: 400, duration: 30, mult: 3, active: false, timer: 0 },
+            { name: "Click Dorado", cost: 1000, duration: 45, mult: 5, active: false, timer: 0 }
+        ];
+        
+        const dailyChallenges = [
+            { name: "Click 200 Veces", target: 200, type: "clicks", progress: 0, completed: false, reward: 1000 },
+            { name: "Alcanza 5K Puntos", target: 5000, type: "score", progress: 0, completed: false, reward: 2000 },
+            { name: "50 CPS Mínimo", target: 50, type: "cps", progress: 0, completed: false, reward: 3000 }
+        ];
+        
+        const hiddenAchievements = [
+            { name: "???", desc: "Encuentra el secreto", unlocked: false, secret: "click100times", progress: 0 },
+            { name: "???", desc: "Otro secreto", unlocked: false, secret: "buy10upgrades", progress: 0 },
+            { name: "???", desc: "Y más secretos", unlocked: false, secret: "reachRank5", progress: 0 }
+        ];
+        
+        const themes = {
+            default: { bg: "linear-gradient(135deg, #0a0f1a 0%, #141e30 50%, #0a0f1a 100%)", accent: "#00d4ff", name: "Neón Azul" },
+            purple: { bg: "linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%)", accent: "#9b59b6", name: "Púrpura Místico" },
+            green: { bg: "linear-gradient(135deg, #0a1a0a 0%, #1b3d1b 50%, #0a1a0a 100%)", accent: "#27ae60", name: "Naturaleza" },
+            red: { bg: "linear-gradient(135deg, #1a0a0a 0%, #3d1b1b 50%, #1a0a0a 100%)", accent: "#e74c3c", name: "Fuego" },
+            gold: { bg: "linear-gradient(135deg, #1a1500 0%, #3d3000 50%, #1a1500 100%)", accent: "#f1c40f", name: "Oro" }
+        };
+        
+        const easterEggs = {
+            konami: { sequence: [38,38,40,40,37,39,37,39,66,65], progress: 0, found: false },
+            click500: { count: 0, found: false },
+            buyAll: { count: 0, found: false }
+        };
+        
         // ==================== GAME STATE ====================
         let game = {
             score: 0,
@@ -476,8 +531,25 @@
             eventActive: false,
             specialEvent: null,
             specialTimer: 0,
-            specialActive: false
+            specialActive: false,
+            currentRank: 0,
+            currentTheme: 'default',
+            wheelSpins: 1,
+            lastWheelDay: null,
+            stats: { bestCombo: 0, totalPlaytime: 0, upgradesBought: 0 }
         };
+        
+        function getRank() {
+            let rank = ranks[0];
+            for (let r of ranks) {
+                if (game.score >= r.minScore) rank = r;
+            }
+            return rank;
+        }
+        
+        function getTotalMult() {
+            return game.prestigeMult * game.streakMult * getRank().bonus;
+        }
         
         // ==================== HELPERS ====================
         function formatNumber(num) {
@@ -494,7 +566,10 @@
                 if (up.cps < 0) base += up.count;
             }
             if (game.eventActive) base *= game.activeEvent.multiplier;
-            return Math.floor(base * game.prestigeMult * game.streakMult);
+            let mult = game.prestigeMult * game.streakMult * getRank().bonus;
+            if (powerups[0].active) mult *= powerups[0].mult;
+            if (powerups[3].active) mult *= powerups[3].mult;
+            return Math.floor(base * mult);
         }
         
         function getCPS() {
@@ -503,7 +578,10 @@
                 if (up.cps > 0) cps += up.count * up.cps;
             }
             if (game.eventActive) cps *= game.activeEvent.multiplier;
-            return cps * game.prestigeMult;
+            let mult = game.prestigeMult * getRank().bonus;
+            if (powerups[0].active) mult *= powerups[0].mult;
+            if (powerups[3].active) mult *= powerups[3].mult;
+            return cps * mult;
         }
         
         function getLevelXP(level) {
@@ -522,7 +600,14 @@
                 streak: game.streak,
                 achievements: achievements.map(a => a.unlocked),
                 missions: missions.map(m => m.progress),
-                dailyMissions: dailyMissions.map(m => m.progress)
+                dailyMissions: dailyMissions.map(m => m.progress),
+                dailyChallenges: dailyChallenges.map(c => c.progress),
+                powerups: powerups.map(p => ({ active: p.active, timer: p.timer })),
+                hiddenAchievements: hiddenAchievements.map(h => h.unlocked),
+                currentTheme: game.currentTheme,
+                wheelSpins: game.wheelSpins,
+                lastWheelDay: game.lastWheelDay,
+                stats: game.stats
             };
             localStorage.setItem('taprush_save', JSON.stringify(data));
         }
@@ -540,6 +625,10 @@
                     game.streak = data.streak || 0;
                     game.prestigeMult = 1 + (game.prestige * 0.1);
                     game.streakMult = Math.min(7, Math.max(1, game.streak));
+                    game.currentTheme = data.currentTheme || 'default';
+                    game.wheelSpins = data.wheelSpins || 1;
+                    game.lastWheelDay = data.lastWheelDay || null;
+                    game.stats = data.stats || { bestCombo: 0, totalPlaytime: 0, upgradesBought: 0 };
                     
                     if (data.upgrades) {
                         data.upgrades.forEach((count, i) => {
@@ -559,6 +648,21 @@
                     if (data.dailyMissions) {
                         data.dailyMissions.forEach((progress, i) => {
                             if (dailyMissions[i]) dailyMissions[i].progress = progress;
+                        });
+                    }
+                    if (data.dailyChallenges) {
+                        data.dailyChallenges.forEach((progress, i) => {
+                            if (dailyChallenges[i]) dailyChallenges[i].progress = progress;
+                        });
+                    }
+                    if (data.powerups) {
+                        data.powerups.forEach((p, i) => {
+                            if (powerups[i]) { powerups[i].active = p.active; powerups[i].timer = p.timer; }
+                        });
+                    }
+                    if (data.hiddenAchievements) {
+                        data.hiddenAchievements.forEach((unlocked, i) => {
+                            if (hiddenAchievements[i]) hiddenAchievements[i].unlocked = unlocked;
                         });
                     }
                 } catch (e) {
@@ -644,6 +748,7 @@
         
         // ==================== UI ====================
         function updateUI() {
+            const rank = getRank();
             document.getElementById('score-display').textContent = formatNumber(game.score);
             document.getElementById('combo').textContent = 'Combo: x' + game.combo;
             document.getElementById('click-value').textContent = '+' + formatNumber(getClickValue());
@@ -653,6 +758,23 @@
             document.getElementById('energy').textContent = game.energy;
             document.getElementById('energy-fill').style.width = (game.energy / game.maxEnergy * 100) + '%';
             document.getElementById('streak-display').textContent = 'Racha: ' + game.streak + ' días (x' + game.streakMult + ')';
+            
+            let rankEl = document.getElementById('rank-display');
+            if (!rankEl) {
+                rankEl = document.createElement('span');
+                rankEl.id = 'rank-display';
+                document.getElementById('streak-display').after(rankEl);
+            }
+            rankEl.textContent = ' | Rango: ' + rank.name + ' (x' + rank.bonus.toFixed(1) + ')';
+            rankEl.style.color = rank.color;
+            
+            let cpsEl = document.getElementById('cps-display');
+            if (!cpsEl) {
+                cpsEl = document.createElement('span');
+                cpsEl.id = 'cps-display';
+                document.getElementById('click-value').before(cpsEl);
+            }
+            cpsEl.textContent = formatNumber(getCPS()) + '/s | ';
         }
         
         function showUpgrades() {
@@ -697,7 +819,7 @@
         }
         
         function showAchievements() {
-            let html = '';
+            let html = '<div class="section-title">LOGROS</div>';
             achievements.forEach(a => {
                 html += `
                     <div class="achievement-item ${a.unlocked ? 'achievement-unlocked' : ''}">
@@ -706,7 +828,141 @@
                     </div>
                 `;
             });
+            
+            html += '<div class="section-title" style="margin-top:20px">LOGROS OCULTOS</div>';
+            hiddenAchievements.forEach(h => {
+                html += `
+                    <div class="achievement-item ${h.unlocked ? 'achievement-unlocked' : ''}">
+                        <span class="upgrade-name">${h.unlocked ? '★ ' : '? '}${h.name}</span>
+                        <div class="upgrade-effect">${h.desc}</div>
+                    </div>
+                `;
+            });
+            
             document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showPowerups() {
+            let html = '<div class="section-title">POWER-UPS</div><div style="text-align:center;margin-bottom:15px">Puntos: ' + formatNumber(game.score) + '</div>';
+            powerups.forEach((p, i) => {
+                const canAfford = game.score >= p.cost && !p.active;
+                html += `
+                    <div class="powerup-item ${canAfford ? '' : 'disabled'} ${p.active ? 'active' : ''}" data-powerup="${i}">
+                        <span class="upgrade-name">${p.name}</span>
+                        <span class="upgrade-cost">${p.active ? 'ACTIVO (' + Math.ceil(p.timer) + 's)' : formatNumber(p.cost)}</span>
+                        <div class="upgrade-effect">${p.duration > 0 ? p.mult + 'x por ' + p.duration + 's' : '+' + p.energyBonus + ' energía'}</div>
+                    </div>
+                `;
+            });
+            
+            html += '<div class="section-title" style="margin-top:20px">RUEDA DE LA FORTUNA</div>';
+            const today = new Date().toDateString();
+            if (game.lastWheelDay !== today && game.wheelSpins > 0) {
+                html += `<div class="powerup-item" onclick="spinWheel()" style="cursor:pointer;text-align:center;font-size:20px">🎡 ¡GIRA LA RUEDA!</div>`;
+            } else {
+                html += `<div class="powerup-item disabled" style="text-align:center">${game.wheelSpins > 0 ? 'Ya giraste hoy' : 'Sin spins'}</div>`;
+            }
+            
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showChallenges() {
+            let html = '<div class="section-title">DESAFÍOS DIARIOS</div>';
+            dailyChallenges.forEach(c => {
+                const pct = Math.min(100, Math.floor(c.progress / c.target * 100));
+                html += `
+                    <div class="mission-item ${c.completed ? 'completed' : ''}">
+                        <span class="upgrade-name">${c.name}</span>
+                        <span class="upgrade-cost">+${formatNumber(c.reward)}</span>
+                        <div class="mission-progress">${formatNumber(c.progress)}/${c.target} (${pct}%)</div>
+                    </div>
+                `;
+            });
+            
+            html += '<div class="section-title" style="margin-top:20px">RANGOS</div>';
+            ranks.forEach(r => {
+                const current = getRank().name === r.name;
+                html += `
+                    <div class="mission-item ${current ? 'completed' : ''}">
+                        <span class="upgrade-name" style="color:${r.color}">${current ? '► ' : ''}${r.name}</span>
+                        <span class="upgrade-cost">x${r.bonus}</span>
+                        <div class="mission-progress">Desde ${formatNumber(r.minScore)} pts</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showStats() {
+            const totalUpgrades = upgrades.reduce((sum, u) => sum + u.count, 0);
+            let html = '<div class="section-title">ESTADÍSTICAS</div>';
+            html += `
+                <div class="mission-item"><span class="upgrade-name">Mejor Combo</span><span class="upgrade-cost">x${game.stats.bestCombo}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Total Clics</span><span class="upgrade-cost">${formatNumber(game.totalClicks)}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Total Upgrades</span><span class="upgrade-cost">${totalUpgrades}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Puntos/Segundo</span><span class="upgrade-cost">${formatNumber(getCPS())}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Nivel</span><span class="upgrade-cost">${game.level}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Prestigio</span><span class="upgrade-cost">${game.prestige}</span></div>
+                <div class="mission-item"><span class="upgrade-name">Racha</span><span class="upgrade-cost">${game.streak} días</span></div>
+            `;
+            
+            html += '<div class="section-title" style="margin-top:20px">ATAJOS DE TECLADO</div>';
+            html += `
+                <div class="mission-item"><span class="upgrade-name">Space</span><span class="upgrade-cost">Clickea</span></div>
+                <div class="mission-item"><span class="upgrade-name">U</span><span class="upgrade-cost">Mejoras</span></div>
+                <div class="mission-item"><span class="upgrade-name">M</span><span class="upgrade-cost">Misiones</span></div>
+                <div class="mission-item"><span class="upgrade-name">A</span><span class="upgrade-cost">Logros</span></div>
+                <div class="mission-item"><span class="upgrade-name">P</span><span class="upgrade-cost">Power-ups</span></div>
+                <div class="mission-item"><span class="upgrade-name">D</span><span class="upgrade-cost">Desafíos</span></div>
+                <div class="mission-item"><span class="upgrade-name">S</span><span class="upgrade-cost">Stats</span></div>
+            `;
+            
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showThemes() {
+            let html = '<div class="section-title">TEMAS</div>';
+            Object.entries(themes).forEach(([key, t]) => {
+                html += `
+                    <div class="theme-item ${game.currentTheme === key ? 'active' : ''}" data-theme="${key}" style="cursor:pointer;padding:10px;margin:5px 0;background:${t.bg};border:2px solid ${t.accent};border-radius:8px">
+                        <span class="upgrade-name" style="color:${t.accent}">${t.name}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function activatePowerup(index) {
+            const p = powerups[index];
+            if (game.score >= p.cost && !p.active) {
+                game.score -= p.cost;
+                p.active = true;
+                p.timer = p.duration;
+                if (p.energyBonus) {
+                    game.energy = Math.min(game.maxEnergy, game.energy + p.energyBonus);
+                    showFloatingText('+' + p.energyBonus + ' ENERGÍA', '#00ff88');
+                }
+                showUpgrades();
+            }
+        }
+        
+        function spinWheel() {
+            const rewards = [100, 500, 1000, 2500, 5000, 10000, 25000];
+            const reward = rewards[Math.floor(Math.random() * rewards.length)];
+            game.score += reward;
+            game.wheelSpins--;
+            game.lastWheelDay = new Date().toDateString();
+            showFloatingText('+' + formatNumber(reward) + '!', '#ffd700');
+            showPowerups();
+        }
+        
+        function changeTheme(themeKey) {
+            game.currentTheme = themeKey;
+            const t = themes[themeKey];
+            document.body.style.background = t.bg;
+            document.getElementById('clicker').style.borderColor = t.accent;
+            showThemes();
         }
         
         function showAchievement(name) {
@@ -749,6 +1005,10 @@
                 if (tabName === 'upgrades') showUpgrades();
                 if (tabName === 'missions') showMissions();
                 if (tabName === 'achievements') showAchievements();
+                if (tabName === 'powerups') showPowerups();
+                if (tabName === 'challenges') showChallenges();
+                if (tabName === 'stats') showStats();
+                if (tabName === 'themes') showThemes();
             });
         });
         
@@ -756,6 +1016,14 @@
             const upgradeEl = e.target.closest('.upgrade-item');
             if (upgradeEl && !upgradeEl.classList.contains('disabled')) {
                 buyUpgrade(parseInt(upgradeEl.dataset.upgrade));
+            }
+            const powerupEl = e.target.closest('.powerup-item');
+            if (powerupEl) {
+                activatePowerup(parseInt(powerupEl.dataset.powerup));
+            }
+            const themeEl = e.target.closest('.theme-item');
+            if (themeEl) {
+                changeTheme(themeEl.dataset.theme);
             }
         });
         
@@ -774,17 +1042,20 @@
             game.combo++;
             game.comboTimer = 2;
             
+            if (game.combo > game.stats.bestCombo) game.stats.bestCombo = game.combo;
+            
             showFloatingText('+' + formatNumber(clickValue), '#ffd700');
             
-            // Particles
             for (let i = 0; i < 3; i++) {
                 createParticle();
             }
             
             checkLevel();
             checkMissions();
+            checkChallenges();
             checkAchievements();
             checkDailyReset();
+            checkEasterEggs();
         }
         
         function buyUpgrade(index) {
@@ -794,10 +1065,35 @@
                 up.count++;
                 up.cost = Math.floor(up.cost * 1.6);
                 game.xp += 100;
+                game.stats.upgradesBought++;
                 checkAchievements();
+                checkEasterEggs();
                 if (document.querySelector('.tab.active')?.dataset.tab === 'upgrades') {
                     showUpgrades();
                 }
+            }
+        }
+        
+        function checkEasterEggs() {
+            easterEggs.click500.count = game.totalClicks;
+            if (easterEggs.click500.count >= 500 && !easterEggs.click500.found) {
+                easterEggs.click500.found = true;
+                game.score += 10000;
+                showFloatingText('🎉 EASTER EGG: 500 CLICS! +10K', '#ff00ff');
+            }
+            
+            let totalUpgrades = upgrades.reduce((sum, u) => sum + u.count, 0);
+            easterEggs.buyAll.count = totalUpgrades;
+            if (easterEggs.buyAll.count >= 10 && !easterEggs.buyAll.found) {
+                easterEggs.buyAll.found = true;
+                game.score += 25000;
+                showFloatingText('🎉 EASTER EGG: 10 UPGRADES! +25K', '#ff00ff');
+            }
+            
+            if (getRank().bonus >= 2 && !easterEggs.reachRank5.found) {
+                easterEggs.reachRank5.found = true;
+                game.score += 50000;
+                showFloatingText('🎉 EASTER EGG: DIAMANTE! +50K', '#ff00ff');
             }
         }
         
@@ -840,19 +1136,39 @@
         }
         
         function checkDailyReset() {
-            // Simple daily check - in real game would use dates
             const now = new Date();
-            const dayKey = 'taprush_day_' + now.toDateString();
-            const lastDay = localStorage.getItem('taprush_lastday');
             const today = now.toDateString();
+            const lastDay = localStorage.getItem('taprush_lastday');
             
             if (lastDay !== today) {
                 dailyMissions.forEach(m => {
                     m.progress = 0;
                     m.completed = false;
                 });
+                dailyChallenges.forEach(c => {
+                    c.progress = 0;
+                    c.completed = false;
+                });
+                game.wheelSpins = 1;
+                game.lastWheelDay = null;
                 localStorage.setItem('taprush_lastday', today);
+                showFloatingText('¡Nuevo día!', '#00d4ff');
             }
+        }
+        
+        function checkChallenges() {
+            dailyChallenges.forEach(c => {
+                if (!c.completed) {
+                    if (c.type === 'clicks') c.progress = game.totalClicks;
+                    if (c.type === 'score') c.progress = game.score;
+                    if (c.type === 'cps') c.progress = getCPS();
+                    if (c.progress >= c.target) {
+                        c.completed = true;
+                        game.score += c.reward;
+                        showFloatingText('¡Desafío!: ' + c.name, '#ffd700');
+                    }
+                }
+            });
         }
         
         function spawnEvent() {
@@ -889,6 +1205,9 @@
             game.prestige++;
             game.prestigeMult = 1 + (game.prestige * 0.1);
             game.score = 0;
+            game.totalClicks = 0;
+            game.level = 1;
+            game.xp = 0;
             game.totalClicks = 0;
             game.level = 1;
             game.xp = 0;
@@ -943,6 +1262,18 @@
                 game.specialTimer = 0;
             }
             
+            // Powerup timers
+            powerups.forEach(p => {
+                if (p.active && p.timer > 0) {
+                    p.timer -= dt;
+                    if (p.timer <= 0) {
+                        p.active = false;
+                        p.timer = 0;
+                        showFloatingText(p.name + ' finalizado', '#666');
+                    }
+                }
+            });
+            
             // Update UI
             updateUI();
             showEventBanner();
@@ -953,6 +1284,16 @@
         
         // ==================== INIT ====================
         document.getElementById('clicker').addEventListener('click', click);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); click(); }
+            if (e.code === 'KeyU') document.querySelector('[data-tab="upgrades"]').click();
+            if (e.code === 'KeyM') document.querySelector('[data-tab="missions"]').click();
+            if (e.code === 'KeyA') document.querySelector('[data-tab="achievements"]').click();
+            if (e.code === 'KeyP') document.querySelector('[data-tab="powerups"]').click();
+            if (e.code === 'KeyD') document.querySelector('[data-tab="challenges"]').click();
+            if (e.code === 'KeyS') document.querySelector('[data-tab="stats"]').click();
+        });
         
         loadGame();
         showUpgrades();
