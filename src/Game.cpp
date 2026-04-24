@@ -9,7 +9,7 @@ void Game::Init() {
 
 void Game::LoadUpgrades() {
     upgrades = {
-        {"Cursor", 15, 0, 0},
+        {"Cursor", 15, 1, 0},
         {"Auto Clicker", 100, 1, 0},
         {"Grandma", 500, 5, 0},
         {"Farm", 2000, 20, 0},
@@ -63,17 +63,15 @@ void Game::BuyUpgrade(int index) {
         up.cost = (int)(up.cost * 1.15);
         
         if (up.clicksPerSecond > 0) {
-            clickMultiplier += up.clicksPerSecond;
+            autoClickCps += up.clicksPerSecond;
+        } else {
+            clickMultiplier += 1;
         }
     }
 }
 
 int Game::GetClicksPerSecond() const {
-    int cps = 0;
-    for (const auto& up : upgrades) {
-        cps += up.count * up.clicksPerSecond;
-    }
-    return cps;
+    return autoClickCps;
 }
 
 void Game::Draw() {
