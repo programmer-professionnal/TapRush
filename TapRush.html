@@ -489,12 +489,12 @@
         }
         
         function getClickValue() {
-            let base = 1 + game.combo;
+            let base = 1;
             for (let up of upgrades) {
                 if (up.cps < 0) base += up.count;
             }
             if (game.eventActive) base *= game.activeEvent.multiplier;
-            return base * game.prestigeMult * game.streakMult;
+            return Math.floor(base * game.prestigeMult * game.streakMult);
         }
         
         function getCPS() {
@@ -538,7 +538,7 @@
                     game.xp = data.xp || 0;
                     game.prestige = data.prestige || 0;
                     game.streak = data.streak || 0;
-                    game.prestigeMult = 1 + game.prestige;
+                    game.prestigeMult = 1 + (game.prestige * 0.1);
                     game.streakMult = Math.min(7, Math.max(1, game.streak));
                     
                     if (data.upgrades) {
@@ -644,7 +644,7 @@
         
         // ==================== UI ====================
         function updateUI() {
-            document.getElementById('score-display').textContent = formatNumber(game.score * game.prestigeMult);
+            document.getElementById('score-display').textContent = formatNumber(game.score);
             document.getElementById('combo').textContent = 'Combo: x' + game.combo;
             document.getElementById('click-value').textContent = '+' + formatNumber(getClickValue());
             document.getElementById('level').textContent = game.level;
@@ -877,7 +877,7 @@
                 return;
             }
             game.prestige++;
-            game.prestigeMult = 1 + game.prestige;
+            game.prestigeMult = 1 + (game.prestige * 0.1);
             game.score = 0;
             game.totalClicks = 0;
             game.level = 1;
