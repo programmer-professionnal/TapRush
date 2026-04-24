@@ -4,9 +4,16 @@
 #include <string>
 #include "Button.h"
 
+enum MenuTab {
+    TAB_UPGRADES,
+    TAB_MISSIONS,
+    TAB_PROGRESS,
+    TAB_STATS
+};
+
 struct Upgrade {
     std::string name;
-    int cost;
+    long long cost;
     int clicksPerSecond;
     int count;
     bool isLimited;
@@ -47,6 +54,23 @@ struct Event {
     int multiplier;
 };
 
+struct WeeklyMission {
+    std::string name;
+    std::string description;
+    int target;
+    int current;
+    bool completed;
+    int reward;
+    bool claimed;
+};
+
+struct LeaderboardEntry {
+    std::string name;
+    int score;
+    int level;
+    int prestige;
+};
+
 class Game {
 public:
     void Init();
@@ -54,55 +78,84 @@ public:
     void Draw();
     void Save();
     void Load();
+    void SetTab(MenuTab tab) { currentTab = tab; }
 
     void AddUpgrade(const std::string& name, int baseCost, int cps);
     void BuyUpgrade(int index);
     void Click();
 
-    int GetScore() const { return score; }
+    int GetScore() const { return (int)score; }
+    long long GetDisplayScore() const { return score * prestigeMultiplier; }
     int GetClicksPerSecond() const;
     int GetClickValue() const {
         int base = 1 + combo;
         for (const auto& up : upgrades) {
-            if (up.clicksPerSecond < 0) {
-                base += up.count;
-            }
+            if (up.clicksPerSecond < 0) base += up.count;
         }
         if (event.active) base *= event.multiplier;
-        return base;
+        return base * prestigeMultiplier * streakMultiplier;
     }
     int GetCursorCount() const;
     int GetLevel() const { return level; }
     float GetXP() const { return xp; }
     float GetCombo() const { return combo; }
+    MenuTab GetTab() const { return currentTab; }
 
-private:
-    int score = 0;
-    float scoreFloat = 0;
-    int totalClicks = 0;
-    int level = 1;
-    float xp = 0;
-    int combo = 0;
-    float comboTimer = 0;
-    std::vector<Upgrade> upgrades;
-    std::vector<Button> upgradeButtons;
-    std::vector<Particle> particles;
-    std::vector<Particle> floatTexts;
-    std::vector<Achievement> achievements;
-    std::vector<Mission> missions;
-    std::vector<Mission> dailyMissions;
-
-    Button clickArea;
-    float clickAnimTimer = 0;
-    float starRotation = 0;
-    float pulseTimer = 0;
-    float autoClickTimer = 0;
-    float achievementTimer = 0;
-    float dailyResetTimer = 0;
-    float eventTimer = 0;
+void AddStreak() { if (dailyStreak < 0) dailyStreak = 0; dailyStreak++; lastPlayDay = GetDayOfYear(); UpdateStreakMultiplier(); }
+    void UseEnergy() { if (energy > 0) energy--; }
+    int GetEnergy() const { return energy; }
+    int GetMaxEnergy() const { return maxEnergy; }
+    void RegenerateEnergy() { if (energy < maxEnergy) energy++; }
+    bool CanClick() const { return energy > 0 || energyUnlimited; }
+    void SetEnergyUnlimited(bool u) { energyUnlimited = u; }
+    void AddToLeaderboard(int s, int l, int p) {
+        LeaderboardEntry entry;
+        entry.name = "Tú";
+        entry.score = s;
+        entry.level = l;
+        entry.prestige = p;
+        leaderboard.push_back(entry);
+        for (size_t i = 0; i < leaderboard.size() - 1; i++) {
+            for (size_t j = i + 1; j < leaderboard.size(); j++) {
+                if (leaderboard[j].score > leaderboard[i].score) {
+                    LeaderboardEntry temp = leaderboard[i];
+                    leaderboard[i] = leaderboard[j];
+                    leaderboard[j] = temp;
+                }
+            }
+        }
+        if (leaderboard.size() > 10) leaderboard.resize(10);
+    }
+    const std::vector<LeaderboardEntry>& GetLeaderboard() const { return leaderboard; }
+    int GetDayOfYear();
+    void AddXP(int amount);
+    void UpdateStreakMultiplier();
     
-    Event event = {"Ninguno", 0, 0, false, 1};
-
+    void CheckDailyReset();
+    void CheckWeeklyReset();
+    void AddWeeklyProgress(const std::string& type, int amount);
+    void Prestige();
+    
+    void DrawClickArea();
+    void DrawUI();
+    void DrawMenuTabs();
+    void DrawUpgradePanel();
+    void DrawMissionsPanel();
+    void DrawProgressPanel();
+    void DrawStatsPanel();
+    void DrawParticles();
+    void DrawAchievements();
+    void DrawCombo();
+    void DrawEvent();
+    void DrawLevel();
+    void DrawStats();
+    void DrawEnergy();
+    void DrawStreak();
+    void DrawPrestige();
+    void DrawSpecialEvent();
+    void DrawLeaderboard();
+    void LoadWeeklyMissions();
+    void CheckWeeklyMissions();
     void LoadUpgrades();
     void LoadAchievements();
     void LoadMissions();
@@ -111,20 +164,60 @@ private:
     void CheckLevelUp();
     void UnlockAchievement(int index);
     void SpawnRandomEvent();
-    void AddXP(int amount);
-    
-    void DrawClickArea();
-    void DrawUI();
-    void DrawUpgradePanel();
-    void DrawParticles();
-    void DrawAchievements();
-    void DrawMissions();
-    void DrawCombo();
-    void DrawEvent();
-    void DrawLevel();
-    void DrawStats();
+    void SpawnSpecialEvent();
     
     void SpawnClickParticles(Vector2 pos, int count);
     void SpawnFloatText(Vector2 pos, const char* text, Color color);
     void UpdateParticles();
+
+private:
+    long long score = 0;
+    float scoreFloat = 0;
+    long long totalClicks = 0;
+    int level = 1;
+    float xp = 0;
+    int combo = 0;
+    float comboTimer = 0;
+    MenuTab currentTab = TAB_UPGRADES;
+    std::vector<Upgrade> upgrades;
+    std::vector<Button> upgradeButtons;
+    std::vector<Button> menuTabs;
+    std::vector<Particle> particles;
+    std::vector<Particle> floatTexts;
+    std::vector<Achievement> achievements;
+    std::vector<Mission> missions;
+    std::vector<Mission> dailyMissions;
+
+    int energy = 500;
+    int maxEnergy = 500;
+    float energyRegenTimer = 0;
+    bool energyUnlimited = false;
+    int dailyStreak = 0;
+    int lastPlayDay = 0;
+    int streakMultiplier = 1;
+    int prestigeLevel = 0;
+    int prestigeMultiplier = 1;
+
+    int weeklyScore = 0;
+    int weeklyClicks = 0;
+    int weeklyUpgrades = 0;
+    int weeklyStartDay = 0;
+    std::vector<WeeklyMission> weeklyMissions;
+
+    std::vector<LeaderboardEntry> leaderboard;
+    float screenShake = 0;
+    float levelUpAnim = 0;
+
+    Button clickArea;
+    float clickAnimTimer = 0;
+    float starRotation = 0;
+    float pulseTimer = 0;
+    float autoClickTimer = 0;
+    float achievementTimer = 0;
+    float eventTimer = 0;
+    float specialEventTimer = 0;
+    std::string specialEventName = "";
+    bool specialEventActive = false;
+    
+    Event event = {"Ninguno", 0, 0, false, 1};
 };
