@@ -42,9 +42,9 @@ void Game::Update() {
         }
     }
 
-    autoClickCps = GetClicksPerSecond();
-    if (autoClickCps > 0) {
-        score += autoClickCps / 60;
+    int cps = GetClicksPerSecond();
+    if (cps > 0) {
+        score += cps / 60;
     }
 }
 
@@ -71,7 +71,13 @@ void Game::BuyUpgrade(int index) {
 }
 
 int Game::GetClicksPerSecond() const {
-    return autoClickCps;
+    int cps = 0;
+    for (const auto& up : upgrades) {
+        if (up.clicksPerSecond > 0) {
+            cps += up.count * up.clicksPerSecond;
+        }
+    }
+    return cps;
 }
 
 void Game::Draw() {
