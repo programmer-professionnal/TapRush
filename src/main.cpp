@@ -3,7 +3,8 @@
 
 int main() {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
-    InitWindow(1920, 1080, "TapRush - Clicker Game");
+    InitWindow(1280, 720, "TapRush - Clicker Game");
+    SetWindowPosition(200, 100);
     SetTargetFPS(60);
 
     Game game;
@@ -16,8 +17,8 @@ int main() {
         
         if (IsKeyPressed(KEY_F11) || (IsKeyPressed(KEY_ENTER) && IsKeyDown(KEY_LEFT_ALT))) {
             if (fullscreen) {
-                SetWindowSize(1920, 1080);
-                SetWindowPosition(100, 50);
+                SetWindowSize(1280, 720);
+                SetWindowPosition(200, 100);
             }
             ToggleFullscreen();
             fullscreen = !fullscreen;
