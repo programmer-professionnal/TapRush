@@ -16,6 +16,8 @@ public:
     void Init();
     void Update();
     void Draw();
+    void Save();
+    void Load();
 
     void AddUpgrade(const std::string& name, int baseCost, int cps);
     void BuyUpgrade(int index);
@@ -36,6 +38,7 @@ public:
 
 private:
     int score = 0;
+    float scoreFloat = 0;
     int totalClicks = 0;
     std::vector<Upgrade> upgrades;
     std::vector<Button> upgradeButtons;
