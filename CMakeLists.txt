@@ -4,9 +4,9 @@ project(TapRush)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories("C:/Users/neel969/Desktop/DEVELOPMENT/TapRush/raylib/raylib-5.0_win64_mingw-w64/include")
+include_directories("C:/Users/neel969/Desktop/DEVELOPMENT/TapRush/raylib/raylib-6.0_win64_mingw-w64")
 
-link_directories("C:/Users/neel969/Desktop/DEVELOPMENT/TapRush/raylib/raylib-5.0_win64_mingw-w64/lib")
+link_directories("C:/Users/neel969/Desktop/DEVELOPMENT/TapRush/raylib/raylib-6.0_win64_mingw-w64/lib")
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
