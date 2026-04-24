@@ -23,13 +23,20 @@ public:
 
     int GetScore() const { return score; }
     int GetClicksPerSecond() const;
-    int GetClickValue() const { return 1 + clickMultiplier; }
+    int GetClickValue() const {
+        int base = 1;
+        for (const auto& up : upgrades) {
+            if (up.clicksPerSecond < 0) {
+                base += up.count;
+            }
+        }
+        return base;
+    }
+    int GetCursorCount() const;
 
 private:
     int score = 0;
     int totalClicks = 0;
-    int clickMultiplier = 0;
-    int autoClickCps = 0;
     std::vector<Upgrade> upgrades;
     std::vector<Button> upgradeButtons;
 

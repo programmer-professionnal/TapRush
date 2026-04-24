@@ -9,7 +9,7 @@ void Game::Init() {
 
 void Game::LoadUpgrades() {
     upgrades = {
-        {"Cursor", 15, 1, 0},
+        {"Cursor", 15, -1, 0},
         {"Auto Clicker", 100, 1, 0},
         {"Grandma", 500, 5, 0},
         {"Farm", 2000, 20, 0},
@@ -61,12 +61,6 @@ void Game::BuyUpgrade(int index) {
         score -= up.cost;
         up.count++;
         up.cost = (int)(up.cost * 1.15);
-        
-        if (up.clicksPerSecond > 0) {
-            autoClickCps += up.clicksPerSecond;
-        } else {
-            clickMultiplier += 1;
-        }
     }
 }
 
@@ -78,6 +72,16 @@ int Game::GetClicksPerSecond() const {
         }
     }
     return cps;
+}
+
+int Game::GetCursorCount() const {
+    int cursors = 0;
+    for (const auto& up : upgrades) {
+        if (up.clicksPerSecond < 0) {
+            cursors += up.count;
+        }
+    }
+    return cursors;
 }
 
 void Game::Draw() {
@@ -124,6 +128,6 @@ void Game::DrawUpgradePanel() {
 
 void Game::DrawUI() {
     DrawText(TextFormat("Score: %d", score), 20, 20, 32, WHITE);
-    DrawText(TextFormat("CPS: %d", autoClickCps), 20, 60, 20, LIGHTGRAY);
+    DrawText(TextFormat("CPS: %d", GetClicksPerSecond()), 20, 60, 20, LIGHTGRAY);
     DrawText(TextFormat("Total Clicks: %d", totalClicks), 20, 85, 16, GRAY);
 }
