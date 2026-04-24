@@ -2,7 +2,7 @@
 #include <raylib.h>
 
 int main() {
-    SetConfigFlags(FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
     InitWindow(1920, 1080, "TapRush - Clicker Game");
     SetTargetFPS(60);
 
