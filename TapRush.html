@@ -394,38 +394,38 @@
     <script>
         // ==================== GAME DATA ====================
         const upgrades = [
-            { name: "Cursor", cost: 100, cps: -1, count: 0 },
-            { name: "Auto Clicker", cost: 5000, cps: 1, count: 0 },
-            { name: "Grandma", cost: 50000, cps: 5, count: 0 },
-            { name: "Farm", cost: 750000, cps: 20, count: 0 },
-            { name: "Mine", cost: 15000000, cps: 100, count: 0 },
-            { name: "Factory", cost: 300000000, cps: 500, count: 0 },
-            { name: "Temple", cost: 5000000000, cps: 2500, count: 0 },
-            { name: "Magic Portal", cost: 75000000000, cps: 10000, count: 0 },
-            { name: "Quantum Core", cost: 1000000000000, cps: 50000, count: 0 },
-            { name: "Alien Tech", cost: 25000000000000, cps: 250000, count: 0 }
+            { name: "Cursor", cost: 15, cps: -1, count: 0 },
+            { name: "Auto Clicker", cost: 100, cps: 1, count: 0 },
+            { name: "Grandma", cost: 500, cps: 3, count: 0 },
+            { name: "Farm", cost: 2000, cps: 10, count: 0 },
+            { name: "Mine", cost: 10000, cps: 40, count: 0 },
+            { name: "Factory", cost: 50000, cps: 150, count: 0 },
+            { name: "Temple", cost: 250000, cps: 500, count: 0 },
+            { name: "Magic Portal", cost: 1000000, cps: 2000, count: 0 },
+            { name: "Quantum Core", cost: 5000000, cps: 10000, count: 0 },
+            { name: "Alien Tech", cost: 25000000, cps: 50000, count: 0 }
         ];
         
         const missions = [
-            { name: "Click 100", target: 100, progress: 0, completed: false, reward: 500 },
-            { name: "Click 500", target: 500, progress: 0, completed: false, reward: 2000 },
-            { name: "Click 1K", target: 1000, progress: 0, completed: false, reward: 5000 },
-            { name: "Click 5K", target: 5000, progress: 0, completed: false, reward: 25000 },
-            { name: "Click 10K", target: 10000, progress: 0, completed: false, reward: 50000 },
-            { name: "Puntos 1K", target: 1000, progress: 0, completed: false, reward: 1000 },
-            { name: "Puntos 10K", target: 10000, progress: 0, completed: false, reward: 5000 },
-            { name: "Puntos 100K", target: 100000, progress: 0, completed: false, reward: 10000 },
-            { name: "Combo x5", target: 5, progress: 0, completed: false, reward: 1000 },
-            { name: "Combo x10", target: 10, progress: 0, completed: false, reward: 2500 }
+            { name: "Click 100", target: 100, progress: 0, completed: false, reward: 50 },
+            { name: "Click 500", target: 500, progress: 0, completed: false, reward: 150 },
+            { name: "Click 1K", target: 1000, progress: 0, completed: false, reward: 300 },
+            { name: "Click 5K", target: 5000, progress: 0, completed: false, reward: 1000 },
+            { name: "Click 10K", target: 10000, progress: 0, completed: false, reward: 2000 },
+            { name: "Puntos 1K", target: 1000, progress: 0, completed: false, reward: 100 },
+            { name: "Puntos 10K", target: 10000, progress: 0, completed: false, reward: 500 },
+            { name: "Puntos 100K", target: 100000, progress: 0, completed: false, reward: 2000 },
+            { name: "Combo x5", target: 5, progress: 0, completed: false, reward: 50 },
+            { name: "Combo x10", target: 10, progress: 0, completed: false, reward: 100 }
         ];
         
         const dailyMissions = [
-            { name: "Daily: 100 Clics", target: 100, progress: 0, completed: false, reward: 500 },
-            { name: "Daily: 500 Clics", target: 500, progress: 0, completed: false, reward: 2000 },
-            { name: "Daily: 1000 Pts", target: 1000, progress: 0, completed: false, reward: 3000 },
-            { name: "Daily: 5000 Pts", target: 5000, progress: 0, completed: false, reward: 10000 },
-            { name: "Daily: 10 CPS", target: 10, progress: 0, completed: false, reward: 5000 },
-            { name: "Daily: 50 CPS", target: 50, progress: 0, completed: false, reward: 15000 }
+            { name: "Daily: 100 Clics", target: 100, progress: 0, completed: false, reward: 50 },
+            { name: "Daily: 500 Clics", target: 500, progress: 0, completed: false, reward: 150 },
+            { name: "Daily: 1000 Pts", target: 1000, progress: 0, completed: false, reward: 200 },
+            { name: "Daily: 5000 Pts", target: 5000, progress: 0, completed: false, reward: 500 },
+            { name: "Daily: 10 CPS", target: 10, progress: 0, completed: false, reward: 300 },
+            { name: "Daily: 50 CPS", target: 50, progress: 0, completed: false, reward: 1000 }
         ];
         
         const achievements = [
@@ -449,9 +449,9 @@
             { name: "Nivel 25", desc: "Alcanza nivel 25", unlocked: false },
             { name: "Productor", desc: "10 CPS", unlocked: false },
             { name: "Productor Avanzado", desc: "100 CPS", unlocked: false },
-            { name: "Millonario", desc: "1M puntos", unlocked: false },
-            { name: "Multimillonario", desc: "10M puntos", unlocked: false },
-            { name: "Gigamillonario", desc: "100M puntos", unlocked: false },
+            { name: "Novato", desc: "1K puntos", unlocked: false },
+            { name: "Estudiante", desc: "10K puntos", unlocked: false },
+            { name: "Graduado", desc: "100K puntos", unlocked: false },
             { name: "Evento", desc: "Activar un evento", unlocked: false },
             { name: "Premio", desc: "Primer Prestigio", unlocked: false }
         ];
@@ -628,9 +628,9 @@
                 { i: 17, cond: game.level >= 25 },
                 { i: 18, cond: getCPS() >= 10 },
                 { i: 19, cond: getCPS() >= 100 },
-                { i: 20, cond: game.score >= 1000000 },
-                { i: 21, cond: game.score >= 10000000 },
-                { i: 22, cond: game.score >= 100000000 },
+                { i: 20, cond: game.score >= 1000 },
+                { i: 21, cond: game.score >= 10000 },
+                { i: 22, cond: game.score >= 100000 },
                 { i: 23, cond: game.eventActive }
             ];
             
@@ -882,8 +882,8 @@
         // ==================== PRESTIGE ====================
         function prestige() {
             const prestigeScore = game.score + game.totalClicks;
-            if (prestigeScore < 10000000) {
-                showFloatingText('¡Necesitas 10M puntos!', '#ff0000');
+            if (prestigeScore < 1000000) {
+                showFloatingText('¡Necesitas 1M puntos!', '#ff0000');
                 return;
             }
             game.prestige++;
