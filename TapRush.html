@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TapRush - Clicker Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #0a0f1a 0%, #141e30 50%, #0a0f1a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #game-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(ellipse at center, #1a2538 0%, #0d1117 100%);
+        }
+        
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(180deg, rgba(10,15,26,0.95) 0%, rgba(10,15,26,0) 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            gap: 30px;
+            z-index: 10;
+        }
+        
+        #title {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #4a90d9, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(74,144,217,0.5);
+        }
+        
+        .stat {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .stat-value {
+            color: #00d4ff;
+            font-size: 32px;
+        }
+        
+        #score-display {
+            font-size: 48px;
+            font-weight: 900;
+            color: #fff;
+        }
+        
+        #clicker {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4a90d9, #1a5070);
+            border: 4px solid #00d4ff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 900;
+            transition: all 0.1s;
+            box-shadow: 0 0 50px rgba(0,212,255,0.3), inset 0 0 30px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 5;
+        }
+        
+        #clicker:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 30px rgba(0,212,255,0.5);
+        }
+        
+        #clicker::before {
+            content: '';
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        #click-value {
+            position: absolute;
+            top: -60px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffd700;
+        }
+        
+        #combo {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff6b35;
+        }
+        
+        #sidebar {
+            width: 350px;
+            background: linear-gradient(180deg, #0d1117 0%, #141e30 100%);
+            display: flex;
+            flex-direction: column;
+            border-left: 2px solid #1a2538;
+        }
+        
+        #tabs {
+            display: flex;
+            border-bottom: 2px solid #1a2538;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            background: #0d1117;
+            color: #666;
+            transition: all 0.3s;
+            border: none;
+            outline: none;
+        }
+        
+        .tab:hover {
+            background: #141e30;
+            color: #00d4ff;
+        }
+        
+        .tab.active {
+            background: #141e30;
+            color: #00d4ff;
+            border-bottom: 3px solid #00d4ff;
+        }
+        
+        #tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .upgrade-item, .mission-item, .achievement-item {
+            background: linear-gradient(135deg, #1a2538 0%, #0d1117 100%);
+            border: 1px solid #2a3a50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upgrade-item:hover, .mission-item:hover {
+            border-color: #00d4ff;
+            transform: translateX(5px);
+        }
+        
+        .upgrade-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .upgrade-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+        
+        .upgrade-cost {
+            font-size: 12px;
+            color: #ff6b35;
+            float: right;
+        }
+        
+        .upgrade-effect {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        #level-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 200px;
+        }
+        
+        #level-bar-fill {
+            height: 10px;
+            background: linear-gradient(90deg, #00d4ff, #4a90d9);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        #energy-bar {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 200px;
+        }
+        
+        #energy-fill {
+            height: 10px;
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        .floating-text {
+            position: absolute;
+            font-size: 24px;
+            font-weight: 700;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 700;
+            animation: slideIn 0.5s, fadeOut 0.5s 2.5s forwards;
+            z-index: 100;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(100%); }
+        }
+        
+        #event-banner {
+            position: absolute;
+            top: 100px;
+            background: linear-gradient(90deg, #ff6b35, #ff0000);
+            color: #fff;
+            padding: 10px 30px;
+            font-weight: 700;
+            border-radius: 25px;
+            animation: pulse 1s infinite;
+            display: none;
+        }
+        
+        #prestige-btn {
+            position: absolute;
+            bottom: 60px;
+            left: 30px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #streak-display {
+            position: absolute;
+            bottom: 60px;
+            right: 30px;
+            font-size: 14px;
+            color: #ff6b35;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .completed {
+            border-color: #00ff88 !important;
+        }
+        
+        .achievement-unlocked {
+            background: linear-gradient(135deg, #2a4a30 0%, #1a3020 100%) !important;
+            border-color: #00ff88 !important;
+        }
+        
+        .mission-progress {
+            font-size: 11px;
+            color: #00d4ff;
+            margin-top: 3px;
+        }
+        
+        #daily-missions, #weekly-missions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a3a50;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-area">
+            <div id="header">
+                <div id="title">TAPRUSH</div>
+                <div>
+                    <div class="stat-value" id="score-display">0</div>
+                </div>
+            </div>
+            
+            <div id="combo">Combo: x0</div>
+            
+            <div id="clicker">
+                <div id="click-value">+1</div>
+                TAP!
+            </div>
+            
+            <div id="event-banner">EVENTO!</div>
+            
+            <div id="prestige-btn">Prestigio</div>
+            <div id="streak-display">Racha: 0 días (x1)</div>
+            
+            <div id="level-bar">
+                <div class="stat">Nivel <span id="level">1</span></div>
+                <div id="level-bar-fill" style="width: 0%"></div>
+                <div class="progress-text">XP: <span id="xp">0</span>/1000</div>
+            </div>
+            
+            <div id="energy-bar">
+                <div class="stat">Energía</div>
+                <div id="energy-fill" style="width: 100%"></div>
+                <div class="progress-text"><span id="energy">500</span>/500</div>
+            </div>
+        </div>
+        
+        <div id="sidebar">
+            <div id="tabs">
+                <button class="tab active" data-tab="upgrades">MEJORAS</button>
+                <button class="tab" data-tab="missions">MISIONES</button>
+                <button class="tab" data-tab="achievements">LOGROS</button>
+            </div>
+            
+            <div id="tab-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME DATA ====================
+        const upgrades = [
+            { name: "Cursor", cost: 100, cps: -1, count: 0 },
+            { name: "Auto Clicker", cost: 5000, cps: 1, count: 0 },
+            { name: "Grandma", cost: 50000, cps: 5, count: 0 },
+            { name: "Farm", cost: 750000, cps: 20, count: 0 },
+            { name: "Mine", cost: 15000000, cps: 100, count: 0 },
+            { name: "Factory", cost: 300000000, cps: 500, count: 0 },
+            { name: "Temple", cost: 5000000000, cps: 2500, count: 0 },
+            { name: "Magic Portal", cost: 75000000000, cps: 10000, count: 0 },
+            { name: "Quantum Core", cost: 1000000000000, cps: 50000, count: 0 },
+            { name: "Alien Tech", cost: 25000000000000, cps: 250000, count: 0 }
+        ];
+        
+        const missions = [
+            { name: "Click 100", target: 100, progress: 0, completed: false, reward: 500 },
+            { name: "Click 500", target: 500, progress: 0, completed: false, reward: 2000 },
+            { name: "Click 1K", target: 1000, progress: 0, completed: false, reward: 5000 },
+            { name: "Click 5K", target: 5000, progress: 0, completed: false, reward: 25000 },
+            { name: "Click 10K", target: 10000, progress: 0, completed: false, reward: 50000 },
+            { name: "Puntos 1K", target: 1000, progress: 0, completed: false, reward: 1000 },
+            { name: "Puntos 10K", target: 10000, progress: 0, completed: false, reward: 5000 },
+            { name: "Puntos 100K", target: 100000, progress: 0, completed: false, reward: 10000 },
+            { name: "Combo x5", target: 5, progress: 0, completed: false, reward: 1000 },
+            { name: "Combo x10", target: 10, progress: 0, completed: false, reward: 2500 }
+        ];
+        
+        const dailyMissions = [
+            { name: "Daily: 100 Clics", target: 100, progress: 0, completed: false, reward: 500 },
+            { name: "Daily: 500 Clics", target: 500, progress: 0, completed: false, reward: 2000 },
+            { name: "Daily: 1000 Pts", target: 1000, progress: 0, completed: false, reward: 3000 },
+            { name: "Daily: 5000 Pts", target: 5000, progress: 0, completed: false, reward: 10000 },
+            { name: "Daily: 10 CPS", target: 10, progress: 0, completed: false, reward: 5000 },
+            { name: "Daily: 50 CPS", target: 50, progress: 0, completed: false, reward: 15000 }
+        ];
+        
+        const achievements = [
+            { name: "Principiante", desc: "100 clics", unlocked: false },
+            { name: "Aprendiz", desc: "500 clics", unlocked: false },
+            { name: "Intermedio", desc: "1000 clics", unlocked: false },
+            { name: "Avanzado", desc: "5000 clics", unlocked: false },
+            { name: "Experto", desc: "10000 clics", unlocked: false },
+            { name: "Maestro Clicker", desc: "50000 clics", unlocked: false },
+            { name: "Leyenda", desc: "100000 clics", unlocked: false },
+            { name: "Primera Compra", desc: "Comprar 1 mejora", unlocked: false },
+            { name: "Comprador", desc: "Comprar 5 mejoras", unlocked: false },
+            { name: "Coleccionista", desc: "Comprar 10 mejoras", unlocked: false },
+            { name: "Magnate", desc: "Comprar 25 mejoras", unlocked: false },
+            { name: "Combo x3", desc: "Alcanza combo x3", unlocked: false },
+            { name: "Combo x5", desc: "Alcanza combo x5", unlocked: false },
+            { name: "Combo x10", desc: "Alcanza combo x10", unlocked: false },
+            { name: "Combo x25", desc: "Alcanza combo x25", unlocked: false },
+            { name: "Nivel 5", desc: "Alcanza nivel 5", unlocked: false },
+            { name: "Nivel 10", desc: "Alcanza nivel 10", unlocked: false },
+            { name: "Nivel 25", desc: "Alcanza nivel 25", unlocked: false },
+            { name: "Productor", desc: "10 CPS", unlocked: false },
+            { name: "Productor Avanzado", desc: "100 CPS", unlocked: false },
+            { name: "Millonario", desc: "1M puntos", unlocked: false },
+            { name: "Multimillonario", desc: "10M puntos", unlocked: false },
+            { name: "Gigamillonario", desc: "100M puntos", unlocked: false },
+            { name: "Evento", desc: "Activar un evento", unlocked: false },
+            { name: "Premio", desc: "Primer Prestigio", unlocked: false }
+        ];
+        
+        // ==================== GAME STATE ====================
+        let game = {
+            score: 0,
+            totalClicks: 0,
+            level: 1,
+            xp: 0,
+            combo: 0,
+            comboTimer: 0,
+            energy: 500,
+            maxEnergy: 500,
+            energyTimer: 0,
+            prestige: 0,
+            prestigeMult: 1,
+            streak: 0,
+            streakMult: 1,
+            activeEvent: null,
+            eventTimer: 0,
+            eventActive: false,
+            specialEvent: null,
+            specialTimer: 0,
+            specialActive: false
+        };
+        
+        // ==================== HELPERS ====================
+        function formatNumber(num) {
+            if (num >= 1e12) return (num / 1e12).toFixed(1) + 'T';
+            if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+            return Math.floor(num).toString();
+        }
+        
+        function getClickValue() {
+            let base = 1 + game.combo;
+            for (let up of upgrades) {
+                if (up.cps < 0) base += up.count;
+            }
+            if (game.eventActive) base *= game.activeEvent.multiplier;
+            return base * game.prestigeMult * game.streakMult;
+        }
+        
+        function getCPS() {
+            let cps = 0;
+            for (let up of upgrades) {
+                if (up.cps > 0) cps += up.count * up.cps;
+            }
+            if (game.eventActive) cps *= game.activeEvent.multiplier;
+            return cps * game.prestigeMult;
+        }
+        
+        function getLevelXP(level) {
+            return level * 1000;
+        }
+        
+        // ==================== SAVE/LOAD ====================
+        function saveGame() {
+            const data = {
+                score: game.score,
+                totalClicks: game.totalClicks,
+                level: game.level,
+                xp: game.xp,
+                upgrades: upgrades.map(u => u.count),
+                prestige: game.prestige,
+                streak: game.streak,
+                achievements: achievements.map(a => a.unlocked),
+                missions: missions.map(m => m.progress),
+                dailyMissions: dailyMissions.map(m => m.progress)
+            };
+            localStorage.setItem('taprush_save', JSON.stringify(data));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('taprush_save');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    game.score = data.score || 0;
+                    game.totalClicks = data.totalClicks || 0;
+                    game.level = data.level || 1;
+                    game.xp = data.xp || 0;
+                    game.prestige = data.prestige || 0;
+                    game.streak = data.streak || 0;
+                    game.prestigeMult = 1 + game.prestige;
+                    game.streakMult = Math.min(7, Math.max(1, game.streak));
+                    
+                    if (data.upgrades) {
+                        data.upgrades.forEach((count, i) => {
+                            if (upgrades[i]) upgrades[i].count = count;
+                        });
+                    }
+                    if (data.achievements) {
+                        data.achievements.forEach((unlocked, i) => {
+                            if (achievements[i]) achievements[i].unlocked = unlocked;
+                        });
+                    }
+                    if (data.missions) {
+                        data.missions.forEach((progress, i) => {
+                            if (missions[i]) missions[i].progress = progress;
+                        });
+                    }
+                    if (data.dailyMissions) {
+                        data.dailyMissions.forEach((progress, i) => {
+                            if (dailyMissions[i]) dailyMissions[i].progress = progress;
+                        });
+                    }
+                } catch (e) {
+                    console.log('Error loading save:', e);
+                }
+            }
+        }
+        
+        // ==================== CHECKS ====================
+        function checkLevel() {
+            let xpNeeded = getLevelXP(game.level);
+            while (game.xp >= xpNeeded) {
+                game.xp -= xpNeeded;
+                game.level++;
+                xpNeeded = getLevelXP(game.level);
+                showFloatingText('¡NIVEL ' + game.level + '!', '#ffd700');
+            }
+        }
+        
+        function checkMissions() {
+            // Permanent missions
+            missions.forEach(m => {
+                if (!m.completed) {
+                    m.progress = game.totalClicks;
+                    if (m.progress >= m.target) {
+                        m.completed = true;
+                        game.score += m.reward;
+                        showFloatingText('¡Misión!: ' + m.name, '#00ff88');
+                    }
+                }
+            });
+            
+            // Daily missions
+            dailyMissions.forEach(m => {
+                if (!m.completed) {
+                    m.progress = game.totalClicks;
+                    if (m.progress >= m.target) {
+                        m.completed = true;
+                        game.score += m.reward;
+                        showFloatingText('¡Misión Diaria!: ' + m.name, '#00ff88');
+                    }
+                }
+            });
+        }
+        
+        function checkAchievements() {
+            let totalUpgrades = upgrades.reduce((sum, u) => sum + u.count, 0);
+            
+            const checks = [
+                { i: 0, cond: game.totalClicks >= 100 },
+                { i: 1, cond: game.totalClicks >= 500 },
+                { i: 2, cond: game.totalClicks >= 1000 },
+                { i: 3, cond: game.totalClicks >= 5000 },
+                { i: 4, cond: game.totalClicks >= 10000 },
+                { i: 5, cond: game.totalClicks >= 50000 },
+                { i: 6, cond: game.totalClicks >= 100000 },
+                { i: 7, cond: totalUpgrades >= 1 },
+                { i: 8, cond: totalUpgrades >= 5 },
+                { i: 9, cond: totalUpgrades >= 10 },
+                { i: 10, cond: totalUpgrades >= 25 },
+                { i: 11, cond: game.combo >= 3 },
+                { i: 12, cond: game.combo >= 5 },
+                { i: 13, cond: game.combo >= 10 },
+                { i: 14, cond: game.combo >= 25 },
+                { i: 15, cond: game.level >= 5 },
+                { i: 16, cond: game.level >= 10 },
+                { i: 17, cond: game.level >= 25 },
+                { i: 18, cond: getCPS() >= 10 },
+                { i: 19, cond: getCPS() >= 100 },
+                { i: 20, cond: game.score >= 1000000 },
+                { i: 21, cond: game.score >= 10000000 },
+                { i: 22, cond: game.score >= 100000000 },
+                { i: 23, cond: game.eventActive }
+            ];
+            
+            checks.forEach(check => {
+                if (check.cond && !achievements[check.i].unlocked) {
+                    achievements[check.i].unlocked = true;
+                    showAchievement(achievements[check.i].name);
+                }
+            });
+        }
+        
+        // ==================== UI ====================
+        function updateUI() {
+            document.getElementById('score-display').textContent = formatNumber(game.score * game.prestigeMult);
+            document.getElementById('combo').textContent = 'Combo: x' + game.combo;
+            document.getElementById('click-value').textContent = '+' + formatNumber(getClickValue());
+            document.getElementById('level').textContent = game.level;
+            document.getElementById('xp').textContent = formatNumber(game.xp) + '/' + formatNumber(getLevelXP(game.level));
+            document.getElementById('level-bar-fill').style.width = (game.xp / getLevelXP(game.level) * 100) + '%';
+            document.getElementById('energy').textContent = game.energy;
+            document.getElementById('energy-fill').style.width = (game.energy / game.maxEnergy * 100) + '%';
+            document.getElementById('streak-display').textContent = 'Racha: ' + game.streak + ' días (x' + game.streakMult + ')';
+        }
+        
+        function showUpgrades() {
+            let html = '';
+            upgrades.forEach((up, i) => {
+                let canAfford = game.score >= up.cost;
+                html += `
+                    <div class="upgrade-item ${canAfford ? '' : 'disabled'}" onclick="${canAfford ? 'buyUpgrade(' + i + ')' : ''}">
+                        <span class="upgrade-name">${up.name} (${up.count})</span>
+                        <span class="upgrade-cost">${formatNumber(up.cost)}</span>
+                        <div class="upgrade-effect">${up.cps < 0 ? '+1/click' : '+' + formatNumber(up.cps * game.prestigeMult) + '/s'}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showMissions() {
+            let html = '<div class="section-title">MISIONES PERMANENTES</div>';
+            missions.forEach(m => {
+                html += `
+                    <div class="mission-item ${m.completed ? 'completed' : ''}">
+                        <span class="upgrade-name">${m.name}</span>
+                        <span class="upgrade-cost">+${formatNumber(m.reward)}</span>
+                        <div class="mission-progress">${m.progress}/${m.target} (${Math.min(100, Math.floor(m.progress / m.target * 100))}%)</div>
+                    </div>
+                `;
+            });
+            
+            html += '<div class="section-title" style="margin-top:15px">MISIONES DIARIAS</div>';
+            dailyMissions.forEach(m => {
+                html += `
+                    <div class="mission-item ${m.completed ? 'completed' : ''}">
+                        <span class="upgrade-name">${m.name}</span>
+                        <span class="upgrade-cost">+${formatNumber(m.reward)}</span>
+                        <div class="mission-progress">${m.progress}/${m.target}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showAchievements() {
+            let html = '';
+            achievements.forEach(a => {
+                html += `
+                    <div class="achievement-item ${a.unlocked ? 'achievement-unlocked' : ''}">
+                        <span class="upgrade-name">${a.unlocked ? '✓ ' : '○ '}${a.name}</span>
+                        <div class="upgrade-effect">${a.desc}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('tab-content').innerHTML = html;
+        }
+        
+        function showAchievement(name) {
+            const notif = document.createElement('div');
+            notif.className = 'achievement-notification';
+            notif.textContent = '🏆 LOGRO: ' + name;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+        
+        function showFloatingText(text, color) {
+            const clicker = document.getElementById('clicker');
+            const rect = clicker.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.textContent = text;
+            el.style.color = color || '#ffd700';
+            el.style.left = (rect.left + rect.width/2 + (Math.random() - 0.5) * 100) + 'px';
+            el.style.top = (rect.top + rect.height/2) + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+        
+        function showEventBanner() {
+            const banner = document.getElementById('event-banner');
+            if (game.eventActive) {
+                banner.textContent = 'EVENTO: ' + game.activeEvent.name + ' (' + Math.ceil(game.eventTimer) + 's)';
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+        
+        // ==================== TABS ====================
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                if (tabName === 'upgrades') showUpgrades();
+                if (tabName === 'missions') showMissions();
+                if (tabName === 'achievements') showAchievements();
+            });
+        });
+        
+        // ==================== GAMEPLAY ====================
+        function click() {
+            if (game.energy <= 0) {
+                showFloatingText('SIN ENERGÍA!', '#ff0000');
+                return;
+            }
+            
+            const clickValue = getClickValue();
+            game.score += clickValue;
+            game.totalClicks++;
+            game.energy--;
+            game.xp += game.level;
+            game.combo++;
+            game.comboTimer = 2;
+            
+            showFloatingText('+' + formatNumber(clickValue), '#ffd700');
+            
+            // Particles
+            for (let i = 0; i < 3; i++) {
+                createParticle();
+            }
+            
+            checkLevel();
+            checkMissions();
+            checkAchievements();
+            checkDailyReset();
+        }
+        
+        function buyUpgrade(index) {
+            const up = upgrades[index];
+            if (game.score >= up.cost) {
+                game.score -= up.cost;
+                up.count++;
+                up.cost = Math.floor(up.cost * 1.6);
+                game.xp += 100;
+                checkAchievements();
+            }
+        }
+        
+        function createParticle() {
+            const clicker = document.getElementById('clicker');
+            const rect = clicker.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.style.cssText = `
+                position: fixed;
+                width: 8px;
+                height: 8px;
+                background: #00d4ff;
+                border-radius: 50%;
+                left: ${rect.left + rect.width/2}px;
+                top: ${rect.top + rect.height/2}px;
+                pointer-events: none;
+            `;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 3;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            document.body.appendChild(el);
+            
+            let x = rect.left + rect.width/2;
+            let y = rect.top + rect.height/2;
+            let life = 1;
+            
+            const anim = setInterval(() => {
+                x += vx;
+                y += vy + 0.1;
+                life -= 0.03;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.opacity = life;
+                if (life <= 0) {
+                    clearInterval(anim);
+                    el.remove();
+                }
+            }, 16);
+        }
+        
+        function checkDailyReset() {
+            // Simple daily check - in real game would use dates
+            const now = new Date();
+            const dayKey = 'taprush_day_' + now.toDateString();
+            const lastDay = localStorage.getItem('taprush_lastday');
+            const today = now.toDateString();
+            
+            if (lastDay !== today) {
+                dailyMissions.forEach(m => {
+                    m.progress = 0;
+                    m.completed = false;
+                });
+                localStorage.setItem('taprush_lastday', today);
+            }
+        }
+        
+        function spawnEvent() {
+            if (Math.random() < 0.05) {
+                const events = [
+                    { name: '2x Puntos', multiplier: 2 },
+                    { name: '3x Puntos', multiplier: 3 },
+                    { name: '5x Puntos', multiplier: 5 }
+                ];
+                game.activeEvent = events[Math.floor(Math.random() * events.length)];
+                game.eventTimer = 60;
+                game.eventActive = true;
+                showFloatingText('¡EVENTO: ' + game.activeEvent.name + '!', '#ff6b35');
+            }
+        }
+        
+        function spawnSpecialEvent() {
+            if (Math.random() < 0.05) {
+                const events = ['Lucky Hour', 'Mega Combo', 'Click Frenzy'];
+                game.specialEvent = events[Math.floor(Math.random() * events.length)];
+                game.specialTimer = 120;
+                game.specialActive = true;
+                showFloatingText('¡ESPECIAL: ' + game.specialEvent + '!', '#ff0000');
+            }
+        }
+        
+        // ==================== PRESTIGE ====================
+        function prestige() {
+            const prestigeScore = game.score + game.totalClicks;
+            if (prestigeScore < 10000000) {
+                showFloatingText('¡Necesitas 10M puntos!', '#ff0000');
+                return;
+            }
+            game.prestige++;
+            game.prestigeMult = 1 + game.prestige;
+            game.score = 0;
+            game.totalClicks = 0;
+            game.level = 1;
+            game.xp = 0;
+            upgrades.forEach(u => u.count = 0);
+            missions.forEach(m => { m.progress = 0; m.completed = false; });
+            showFloatingText('¡PRESTIGIO ' + game.prestige + '!', '#ffd700');
+        }
+        
+        document.getElementById('prestige-btn').addEventListener('click', prestige);
+        
+        // ==================== MAIN LOOP ====================
+        function gameLoop() {
+            const now = Date.now();
+            const dt = 1/60;
+            
+            // Auto clicks
+            const cps = getCPS();
+            if (cps > 0) {
+                game.score += cps * dt;
+            }
+            
+            // Combo timer
+            game.comboTimer -= dt;
+            if (game.comboTimer <= 0) game.combo = 0;
+            
+            // Energy regen
+            game.energyTimer += dt;
+            if (game.energyTimer >= 1 && game.energy < game.maxEnergy) {
+                game.energy++;
+                game.energyTimer = 0;
+            }
+            
+            // Event timer
+            if (game.eventActive) {
+                game.eventTimer -= dt;
+                if (game.eventTimer <= 0) {
+                    game.eventActive = false;
+                }
+            }
+            
+            // Spawn events
+            game.eventTimer += dt;
+            if (game.eventTimer >= 30) {
+                spawnEvent();
+                game.eventTimer = 0;
+            }
+            
+            // Special events
+            game.specialTimer += dt;
+            if (game.specialTimer >= 120) {
+                spawnSpecialEvent();
+                game.specialTimer = 0;
+            }
+            
+            // Update UI
+            updateUI();
+            showEventBanner();
+            
+            // Auto save
+            saveGame();
+        }
+        
+        // ==================== INIT ====================
+        document.getElementById('clicker').addEventListener('click', click);
+        
+        loadGame();
+        showUpgrades();
+        
+        setInterval(gameLoop, 1000/60);
+        
+        saveGame();
+    </script>
+</body>
+</html>
