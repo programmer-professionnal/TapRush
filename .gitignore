@@ -1,0 +1,15 @@
+build/
+raylib/
+raylib.zip
+*.exe
+*.dll
+*.obj
+*.o
+*.a
+*.lib
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+compile_commands.json
