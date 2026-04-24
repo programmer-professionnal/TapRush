@@ -16,7 +16,7 @@ The executable will be in `build/TapRush.exe`.
 
 - Click the big button to earn points
 - Buy upgrades from the right panel to earn automatic clicks per second
-- Upgrades scale in cost (1.15x each purchase)
+- Upgrades scale in cost
 
 ## Customization
 
@@ -48,4 +48,4 @@ In `Game.cpp`, find `LoadUpgrades()` and add new entries:
 
 ## License
 
-MIT
+Apache 2.0
