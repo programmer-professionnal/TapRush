@@ -660,7 +660,7 @@
             upgrades.forEach((up, i) => {
                 let canAfford = game.score >= up.cost;
                 html += `
-                    <div class="upgrade-item ${canAfford ? '' : 'disabled'}" onclick="${canAfford ? 'buyUpgrade(' + i + ')' : ''}">
+                    <div class="upgrade-item ${canAfford ? '' : 'disabled'}" data-upgrade="${i}">
                         <span class="upgrade-name">${up.name} (${up.count})</span>
                         <span class="upgrade-cost">${formatNumber(up.cost)}</span>
                         <div class="upgrade-effect">${up.cps < 0 ? '+1/click' : '+' + formatNumber(up.cps * game.prestigeMult) + '/s'}</div>
@@ -752,6 +752,13 @@
             });
         });
         
+        document.getElementById('tab-content').addEventListener('click', (e) => {
+            const upgradeEl = e.target.closest('.upgrade-item');
+            if (upgradeEl && !upgradeEl.classList.contains('disabled')) {
+                buyUpgrade(parseInt(upgradeEl.dataset.upgrade));
+            }
+        });
+        
         // ==================== GAMEPLAY ====================
         function click() {
             if (game.energy <= 0) {
@@ -788,6 +795,9 @@
                 up.cost = Math.floor(up.cost * 1.6);
                 game.xp += 100;
                 checkAchievements();
+                if (document.querySelector('.tab.active')?.dataset.tab === 'upgrades') {
+                    showUpgrades();
+                }
             }
         }
         
